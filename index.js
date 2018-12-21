@@ -20,7 +20,7 @@ const store = new MongoDBStore({
   collection: 'sessions'
 })
 
-// catch erros
+// catch errors
 store.on('error', error => {
   assert.ifError(error)
   assert.ok(false)
@@ -42,6 +42,8 @@ app.use(bodyParser.urlencoded({extended: false}))
 
 app.use(bodyParser.json())
 
+// middleware
+
 function checkUser(req, res, next) {
   if (req.session.user) {
     next()
@@ -54,29 +56,11 @@ function checkRound(req, res, next) {
   if (req.session.round) {
     next()
   } else {
-    res.redirect('/login')
+    res.redirect('/clubhouse')
   }
 }
 
-// var Tank = mongoose.model('Tank', yourSchema);
-
-// var small = new Tank({ size: 'small' });
-// small.save(function (err) {
-//   if (err) return handleError(err);
-//   // saved!
-// });
-
-// // or
-
-// Tank.create({ size: 'small' }, function (err, small) {
-//   if (err) return handleError(err);
-//   // saved!
-// });
-
-// // or, for inserting large batches of documents
-// Tank.insertMany([{ size: 'small' }], function(err) {
-
-// });
+// route handlers
 
 // user attempted login
 app.post('/login', (req, res) => {

@@ -8,18 +8,6 @@ const GolferSchema = new Schema({
     courseScores: [CourseScoreSchema],
 })
 
-GolferSchema.methods.addCourseScore = CourseScoreSchema => {
-
-}
-
-GolferSchema.methods.updateCourseScore = CourseScoreSchema => {
-    
-}
-
-GolferSchema.methods.deleteCourseScore = CourseScoreSchema => {
-
-}
-
 const Golfer = mongoose.model('Golfer', GolferSchema)
 
 module.exports = {Golfer, GolferSchema}
