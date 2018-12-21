@@ -1,9 +1,9 @@
-const Golfer = require('./models/Golfers')
-const Course = require('./models/Courses')
-const CourseScore = require('./models/CourseScores')
-const Holes = require('./models/Holes')
-const HoleScores = require('./models/HoleScores')
-const Groups = require('./models/Groups')
+const {Golfer} = require('./models/Golfers')
+const {Course} = require('./models/Courses')
+const {CourseScore} = require('./models/CourseScores')
+const {Hole} = require('./models/Holes')
+const {HoleScore} = require('./models/HoleScores')
+const {Group} = require('./models/Groups')
 
 const express = require('express')
 const session = require('express-session')
@@ -77,13 +77,32 @@ function checkRound(req, res, next) {
 // });
 
 
-
+// all users land here initially
 app.get('/login', (req, res) => {
   console.log('backend probed')
   req.session.golfer = new Golfer()
   res.send('Hello' + JSON.stringify(req.session))
 })
 
+// user attempted login
+app.post('/login', (req, res) => {
+  console.log('backend probed')
+  req.session.golfer = new Golfer()
+  res.send('Hello' + JSON.stringify(req.session))
+})
+
+// user attempted register
+app.post('/register', (req, res) => {
+  console.log('attempting register') 
+  const name = req.body.name
+  req.session.golfer = new Golfer({name})
+  req.session.golfer.save(function (err) {
+    if (err) return handleError(err)
+  })
+  res.send(`Hello ${req.session.golfer.name}`)
+})
+
+// user logged in
 app.get('/clubhouse', checkUser, (req, res) => {
   console.log('backend probed')
   req.session.golfer = new Golfer()
