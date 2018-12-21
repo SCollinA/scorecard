@@ -1,5 +1,9 @@
 const Golfer = require('./models/Golfers')
-console.log(Golfer)
+const Course = require('./models/Courses')
+const CourseScore = require('./models/CourseScores')
+const Holes = require('./models/Holes')
+const HoleScores = require('./models/HoleScores')
+const Groups = require('./models/Groups')
 
 const express = require('express')
 const session = require('express-session')
@@ -36,8 +40,25 @@ app.use(bodyParser.urlencoded({extended: false}))
 
 app.use(bodyParser.json())
 
-app.get('/', (req, res) => {
+function checkUser(req, res, next) {
+  if (req.session.user) {
+    next()
+  } else {
+    res.redirect('/login')
+  }
+}
+
+function checkRound(req, res, next) {
+  if (req.session.user) {
+    next()
+  } else {
+    res.redirect('/login')
+  }
+}
+
+app.get('/', checkUser, checkRound, (req, res) => {
   console.log('backend probed')
+  req.session.golfer = new Golfer()
   res.send('Hello' + JSON.stringify(req.session))
 })
 
