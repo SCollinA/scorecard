@@ -44,17 +44,23 @@ app.use(bodyParser.json())
 
 // middleware
 function checkGolfer(req, res, next) {
-  if (req.session.user) {
+  console.log('checking golfer')
+  if (req.session.golfer) {
+    console.log('golfer checked out')
     next()
   } else {
+    console.log('golfer redirected')
     res.redirect('/login')
   }
 }
 
 function checkRound(req, res, next) {
+  console.log('checking round')
   if (req.session.round) {
+    console.log('round checked out')
     next()
   } else {
+    console.log('round redirected')
     res.redirect('/clubhouse')
   }
 }
@@ -90,18 +96,22 @@ function getDBState() {
 app.post('/login', (req, res) => {
   console.log('attempting login')
   const name = req.body.name
-  req.session.golfer = Golfer.findOne({name})
-  res.redirect('/clubhouse')
+  Golfer.findOne({name})
+  .then(golfer => {
+    req.session.golfer = golfer
+    res.redirect('/clubhouse')
+  })
 })
 
 // user attempted register
 app.post('/register', (req, res) => {
   console.log('attempting register') 
   const name = req.body.name
-  req.session.golfer = new Golfer({name})
-  req.session.golfer.save(function (err) {
+  const newGolfer = new Golfer({name})
+  newGolfer.save(function (err) {
     if (err) return handleError(err)
   })
+  req.session.golfer = newGolfer
   res.redirect('/clubhouse')
 })
 
@@ -117,8 +127,8 @@ app.get('/logout', (req, res) => {
 // user logged in
 app.get('/clubhouse', checkGolfer, (req, res) => {
   console.log('returning golfer info')
-  const golfer = Golfer.findById(req.session.golfer.id)
-  res.send(JSON.stringify(golfer))
+  console.log(req.session.golfer)
+  res.send(JSON.stringify(req.session.golfer))
 })
 
 // making new round
@@ -126,9 +136,15 @@ app.post('/teetime', checkGolfer, (req, res) => {
   console.log('making tee time')
   const course = req.body.course
   const golfers = req.body.golfers
-  req.session.round = Group.newGroupFromCourseAndGolfers(course, golfers)
-  req.session.round.save()
-  res.send(JSON.stringify(golfer))
+  Group.newGroupFromCourseAndGolfers(course, golfers)
+  .then(newGroup => {
+    console.log(newGroup)
+    newGroup.save(function (err) {
+      if (err) return handleError(err)
+    })
+    req.session.round = newGroup
+    res.send(JSON.stringify(req.session.round))
+  })
 })
 
 app.get('/', checkGolfer, checkRound, (req, res) => {
