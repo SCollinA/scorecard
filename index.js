@@ -78,19 +78,12 @@ function checkRound(req, res, next) {
 
 // });
 
-
-// all users land here initially
-app.get('/login', (req, res) => {
-  console.log('backend probed')
-  req.session.golfer = new Golfer()
-  res.send('Hello' + JSON.stringify(req.session))
-})
-
 // user attempted login
 app.post('/login', (req, res) => {
-  console.log('backend probed')
-  req.session.golfer = new Golfer()
-  res.send('Hello' + JSON.stringify(req.session))
+  console.log('attempting login')
+  const name = req.body.name
+  req.session.golfer = Golfer.findOne({name})
+  res.redirect('/clubhouse')
 })
 
 // user attempted register
@@ -101,7 +94,15 @@ app.post('/register', (req, res) => {
   req.session.golfer.save(function (err) {
     if (err) return handleError(err)
   })
-  res.send(`Hello ${req.session.golfer.name}`)
+  res.redirect('/clubhouse')
+})
+
+app.post('/logout', (req, res) => {
+  console.log('logging out')
+  req.session.destroy(err => {
+    console.log(err)
+    res.redirect('/login')
+  })
 })
 
 // user logged in
