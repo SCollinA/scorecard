@@ -6,6 +6,7 @@ const {HoleScore} = require('./models/HoleScores')
 const {Group} = require('./models/Groups')
 
 const express = require('express')
+const mongoose = require('mongoose') 
 const session = require('express-session')
 const MongoDBStore = require('connect-mongodb-session')(session)
 const bodyParser = require('body-parser')
@@ -13,8 +14,9 @@ const assert = require('assert')
 
 const app = express()
 const port = 3002
+mongoose.connect(`mongodb://localhost:27017/scorecard-db`, { useNewUrlParser: true });
 const store = new MongoDBStore({
-  uri: `mongodb://localhost:${process.env.DB_PORT}/${process.env.DB_NAME}`,
+  uri: `mongodb://localhost:27017/scorecard-db`,
   collection: 'sessions'
 })
 
