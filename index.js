@@ -43,8 +43,7 @@ app.use(bodyParser.urlencoded({extended: false}))
 app.use(bodyParser.json())
 
 // middleware
-
-function checkUser(req, res, next) {
+function checkGolfer(req, res, next) {
   if (req.session.user) {
     next()
   } else {
@@ -58,6 +57,31 @@ function checkRound(req, res, next) {
   } else {
     res.redirect('/clubhouse')
   }
+}
+
+function getDBState() {
+  Course.find()
+  .then(courses => {
+    Hole.find()
+    .then(holes => {
+      Golfer.find()
+      .then(golfers => {
+        CourseScore.find()
+        .then(courseScores => {
+          HoleScore.find()
+          .then(holeScores => {
+            return {
+              courses, // all the courses
+              holes, // all the holes
+              golfers, // all the golfers
+              courseScores, // all the scores
+              holeScores, // all the hole scores
+            }
+          })
+        })
+      })  
+    })
+  })
 }
 
 // route handlers
@@ -81,7 +105,8 @@ app.post('/register', (req, res) => {
   res.redirect('/clubhouse')
 })
 
-app.post('/logout', (req, res) => {
+// user logged out
+app.get('/logout', (req, res) => {
   console.log('logging out')
   req.session.destroy(err => {
     console.log(err)
@@ -90,14 +115,24 @@ app.post('/logout', (req, res) => {
 })
 
 // user logged in
-app.get('/clubhouse', checkUser, (req, res) => {
-  console.log('backend probed')
-  req.session.golfer = new Golfer()
-  res.send('Hello' + JSON.stringify(req.session))
+app.get('/clubhouse', checkGolfer, (req, res) => {
+  console.log('returning golfer info')
+  const golfer = Golfer.findById(req.session.golfer.id)
+  res.send(JSON.stringify(golfer))
 })
 
-app.get('/', checkUser, checkRound, (req, res) => {
-  console.log('backend probed')
+// making new round
+app.post('/teetime', checkGolfer, (req, res) => {
+  console.log('making tee time')
+  const course = req.body.course
+  const golfers = req.body.golfers
+  req.session.round = Group.newGroupFromCourseAndGolfers(course, golfers)
+  req.session.round.save()
+  res.send(JSON.stringify(golfer))
+})
+
+app.get('/', checkGolfer, checkRound, (req, res) => {
+  console.log('playing round')
   req.session.golfer = new Golfer()
   res.send('Hello' + JSON.stringify(req.session))
 })
