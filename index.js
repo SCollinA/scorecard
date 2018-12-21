@@ -49,12 +49,46 @@ function checkUser(req, res, next) {
 }
 
 function checkRound(req, res, next) {
-  if (req.session.user) {
+  if (req.session.round) {
     next()
   } else {
     res.redirect('/login')
   }
 }
+
+// var Tank = mongoose.model('Tank', yourSchema);
+
+// var small = new Tank({ size: 'small' });
+// small.save(function (err) {
+//   if (err) return handleError(err);
+//   // saved!
+// });
+
+// // or
+
+// Tank.create({ size: 'small' }, function (err, small) {
+//   if (err) return handleError(err);
+//   // saved!
+// });
+
+// // or, for inserting large batches of documents
+// Tank.insertMany([{ size: 'small' }], function(err) {
+
+// });
+
+
+
+app.get('/login', (req, res) => {
+  console.log('backend probed')
+  req.session.golfer = new Golfer()
+  res.send('Hello' + JSON.stringify(req.session))
+})
+
+app.get('/clubhouse', checkUser, (req, res) => {
+  console.log('backend probed')
+  req.session.golfer = new Golfer()
+  res.send('Hello' + JSON.stringify(req.session))
+})
 
 app.get('/', checkUser, checkRound, (req, res) => {
   console.log('backend probed')
