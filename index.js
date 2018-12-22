@@ -140,13 +140,11 @@ app.post('/teetime', checkGolfer, (req, res) => {
   console.log('making tee time')
   const course = req.body.course
   const golfers = req.body.golfers
-  Golfer.groupFromCourseAndGolfers(course, golfers)
+  Group.groupFromCourseAndGolfers(course, golfers)
   .then(group => {
     console.log(group)
-    group.forEach(golfer => {
-      golfer.save(function (err) {
-        if (err) return handleError(err)
-      })
+    group.save(function (err) {
+      if (err) return handleError(err)
     })
     req.session.group = group
     res.send(getGolfState())
