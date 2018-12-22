@@ -5,7 +5,7 @@ const {HoleSchema} = require('./Holes')
 
 const HoleScoreSchema = new Schema({
     hole: HoleSchema,
-    score: Number
+    shots: Number
 })
 
 const HoleScore = mongoose.model('HoleScore', HoleScoreSchema)

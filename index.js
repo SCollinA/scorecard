@@ -65,33 +65,27 @@ function checkRound(req, res, next) {
   }
 }
 
-function getDBState() {
-  Course.find()
+function getGolfState() {
+  // get all the updated courses
+  return Course.find()
   .then(courses => {
-    Hole.find()
-    .then(holes => {
-      Golfer.find()
-      .then(golfers => {
-        CourseScore.find()
-        .then(courseScores => {
-          HoleScore.find()
-          .then(holeScores => {
-            return {
-              courses, // all the courses
-              holes, // all the holes
-              golfers, // all the golfers
-              courseScores, // all the scores
-              holeScores, // all the hole scores
-            }
-          })
-        })
-      })  
+    // update the current golfer
+    return Golfer.findById(req.session.golfer.id)
+    // update the group
+    .then(golfer => {
+      return Promise.all(req.session.group.map(groupMember => Golfer.findById(groupMember.id)))
+      .then(group => {
+        return {
+          golfer, // signed in golfer
+          courses, // all the courses
+          group // current group
+        }
+      })
     })
   })
 }
 
 // route handlers
-
 // user attempted login
 app.post('/login', (req, res) => {
   console.log('attempting login')
@@ -131,19 +125,31 @@ app.get('/clubhouse', checkGolfer, (req, res) => {
   res.send(JSON.stringify(req.session.golfer))
 })
 
+// user added course
+app.post('/course', checkGolfer, (req, res) => {
+  console.log('adding new course')
+  const {name, holes} = req.body
+  const newCourse = new Course({name, holes})
+  newCourse.save(function (err) {
+    if (err) return handleError(err)
+  })
+})
+
 // making new round
 app.post('/teetime', checkGolfer, (req, res) => {
   console.log('making tee time')
   const course = req.body.course
   const golfers = req.body.golfers
-  Group.newGroupFromCourseAndGolfers(course, golfers)
-  .then(newGroup => {
-    console.log(newGroup)
-    newGroup.save(function (err) {
-      if (err) return handleError(err)
+  Golfer.groupFromCourseAndGolfers(course, golfers)
+  .then(group => {
+    console.log(group)
+    group.forEach(golfer => {
+      golfer.save(function (err) {
+        if (err) return handleError(err)
+      })
     })
-    req.session.round = newGroup
-    res.send(JSON.stringify(req.session.round))
+    req.session.group = group
+    res.send(getGolfState())
   })
 })
 
@@ -151,6 +157,20 @@ app.get('/', checkGolfer, checkRound, (req, res) => {
   console.log('playing round')
   req.session.golfer = new Golfer()
   res.send('Hello' + JSON.stringify(req.session))
+})
+
+app.post('/updateCourse', checkGolfer, (req, res) => {
+  console.log('updating course')
+  const course = req.body.course
+  Course.findByIdAndUpdate(course.id, course)
+  .then(() => res.send(getGolfState()))
+})
+
+app.post('/updateGolfer', checkGolfer, (req, res) => {
+  console.log('updating golfer')
+  const golfer = req.body.golfer
+  Golfer.findByIdAndUpdate(golfer.id, golfer)
+  .then(() => res.send(getGolfState()))
 })
 
 app.listen(port, () => console.log(`My Task App listening on port ${port}!`))
