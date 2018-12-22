@@ -159,6 +159,13 @@ app.get('/', checkGolfer, checkRound, (req, res) => {
   res.send('Hello' + JSON.stringify(req.session))
 })
 
+app.post('/stroke', checkGolfer, (req, res) => {
+  console.log('taking stroke')
+  const {id, shots} = req.body
+  HoleScore.findByIdAndUpdate(id, {shots})
+  .then(() => res.send(getGolfState()))
+})
+
 app.post('/updateCourse', checkGolfer, (req, res) => {
   console.log('updating course')
   const course = req.body.course
