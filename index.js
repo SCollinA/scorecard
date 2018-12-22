@@ -50,7 +50,7 @@ function checkGolfer(req, res, next) {
     next()
   } else {
     console.log('golfer redirected')
-    res.redirect('/login')
+    res.redirect('logout')
   }
 }
 
@@ -61,27 +61,33 @@ function checkRound(req, res, next) {
     next()
   } else {
     console.log('round redirected')
-    res.redirect('/clubhouse')
+    res.redirect('clubhouse')
   }
 }
 
-function getGolfState() {
+function getGolfState(golfer) {
   // get all the updated courses
   return Course.find()
   .then(courses => {
+    console.log('getting golf state')
     // update the current golfer
-    return Golfer.findById(req.session.golfer.id)
-    // update the group
-    .then(golfer => {
-      return Promise.all(req.session.group.map(groupMember => Golfer.findById(groupMember.id)))
-      .then(group => {
-        return {
-          golfer, // signed in golfer
-          courses, // all the courses
-          group // current group
-        }
-      })
-    })
+    return golfer ? Golfer.findById(golfer.id)
+      .then(golfer => {
+        console.log('getting state for logged in golfer')
+        // update the group
+        return Promise.all(req.session.group.map(groupMember => Golfer.findById(groupMember.id)))
+        .then(group => {
+          return {
+            golfer, // signed in golfer
+            courses, // all the courses
+            group // current group
+          }
+        })
+      }) : {
+        golfer: {},
+        courses,
+        group: {}
+      }
   })
 }
 
@@ -113,8 +119,9 @@ app.post('/register', (req, res) => {
 app.get('/logout', (req, res) => {
   console.log('logging out')
   req.session.destroy(err => {
-    console.log(err)
-    res.redirect('/login')
+    getGolfState()
+    .then(JSON.stringify)
+    .then(data => res.send(data))
   })
 })
 
@@ -122,7 +129,9 @@ app.get('/logout', (req, res) => {
 app.get('/clubhouse', checkGolfer, (req, res) => {
   console.log('returning golfer info')
   console.log(req.session.golfer)
-  res.send(JSON.stringify(req.session.golfer))
+  getGolfState(req.session.golfer)
+  .then(JSON.stringify)
+  .then(data => res.send(data))
 })
 
 // user added course
@@ -133,6 +142,9 @@ app.post('/course', checkGolfer, (req, res) => {
   newCourse.save(function (err) {
     if (err) return handleError(err)
   })
+  getGolfState(req.session.golfer)
+  .then(JSON.stringify)
+  .then(data => res.send(data))
 })
 
 // making new round
@@ -147,35 +159,48 @@ app.post('/teetime', checkGolfer, (req, res) => {
       if (err) return handleError(err)
     })
     req.session.group = group
-    res.send(getGolfState())
+    res.redirect('')
   })
 })
 
 app.get('/', checkGolfer, checkRound, (req, res) => {
   console.log('playing round')
-  req.session.golfer = new Golfer()
-  res.send('Hello' + JSON.stringify(req.session))
+  getGolfState(req.session.golfer)
+  .then(JSON.stringify)
+  .then(data => res.send(data))
 })
 
 app.post('/stroke', checkGolfer, (req, res) => {
   console.log('taking stroke')
   const {id, shots} = req.body
   HoleScore.findByIdAndUpdate(id, {shots})
-  .then(() => res.send(getGolfState()))
+  .then(() => {
+    getGolfState(req.session.golfer)
+    .then(JSON.stringify)
+    .then(res.send)
+  })
 })
 
 app.post('/updateCourse', checkGolfer, (req, res) => {
   console.log('updating course')
   const course = req.body.course
   Course.findByIdAndUpdate(course.id, course)
-  .then(() => res.send(getGolfState()))
+  .then(() => {
+    getGolfState(req.session.golfer)
+    .then(JSON.stringify)
+    .then(res.send)
+  })
 })
 
 app.post('/updateGolfer', checkGolfer, (req, res) => {
   console.log('updating golfer')
   const golfer = req.body.golfer
   Golfer.findByIdAndUpdate(golfer.id, golfer)
-  .then(() => res.send(getGolfState()))
+  .then(() => {
+    getGolfState(req.session.golfer)
+    .then(JSON.stringify)
+    .then(res.send)
+  })
 })
 
 app.listen(port, () => console.log(`My Task App listening on port ${port}!`))
