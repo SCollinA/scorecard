@@ -1,7 +1,5 @@
 const {Golfer} = require('./models/Golfers')
 const {Course} = require('./models/Courses')
-const {CourseScore} = require('./models/CourseScores')
-const {Hole} = require('./models/Holes')
 const {HoleScore} = require('./models/HoleScores')
 const {Group} = require('./models/Groups')
 
@@ -33,7 +31,7 @@ app.use(session({
     },
     store,
     resave: true,
-    saveUninitialized: true
+    saveUninitialized: true,
 }));
  
 // app.use(express.static('public'))
@@ -45,7 +43,7 @@ app.use(bodyParser.json())
 // middleware
 function checkGolfer(req, res, next) {
   console.log('checking golfer')
-  if (req.session.golfer) {
+  if (req.session.golfState && req.session.golfState.golfer.id) {
     console.log('golfer checked out')
     next()
   } else {
@@ -56,7 +54,7 @@ function checkGolfer(req, res, next) {
 
 function checkRound(req, res, next) {
   console.log('checking round')
-  if (req.session.round) {
+  if (req.session.golfState && req.session.golfState.group) {
     console.log('round checked out')
     next()
   } else {
@@ -65,29 +63,42 @@ function checkRound(req, res, next) {
   }
 }
 
-function getGolfState(golfer) {
+function getGolfState({golfer={}, group={}}) {
   // get all the updated courses
   return Course.find()
   .then(courses => {
-    console.log('getting golf state')
-    // update the current golfer
-    return golfer ? Golfer.findById(golfer.id)
-      .then(golfer => {
+    return Golfer.find()
+    .then(golfers => {
+      console.log('getting golf state')
+      // update the current golfer
+      return golfer.id ? (Golfer.findById(golfer.id)
+      .then(golfer => { 
         console.log('getting state for logged in golfer')
+        console.log(golfer)
         // update the group
-        return Promise.all(req.session.group.map(groupMember => Golfer.findById(groupMember.id)))
-        .then(group => {
+        return group.golfers ? (Group.findById(group.id)
+        .then(activeGroup => {
+          console.log('getting state for active group')
+          console.log(activeGroup)
           return {
-            golfer, // signed in golfer
+            golfer, // logged in golfer
+            golfers,
             courses, // all the courses
-            group // current group
+            group: activeGroup // current group
           }
-        })
-      }) : {
+        })) : {
+          golfer,
+          golfers,
+          courses,
+          group: {}
+        }
+      })) : {
         golfer: {},
+        golfers,
         courses,
         group: {}
       }
+    })
   })
 }
 
@@ -98,8 +109,10 @@ app.post('/login', (req, res) => {
   const name = req.body.name
   Golfer.findOne({name})
   .then(golfer => {
-    req.session.golfer = golfer
-    res.redirect('/clubhouse')
+    req.session.golfState = {golfer, group: {}}
+    getGolfState({golfer, group: {}})
+    .then(JSON.stringify)
+    .then(data => res.send(data))
   })
 })
 
@@ -111,15 +124,17 @@ app.post('/register', (req, res) => {
   newGolfer.save(function (err) {
     if (err) return handleError(err)
   })
-  req.session.golfer = newGolfer
-  res.redirect('/clubhouse')
+  req.session.golfState.golfer = newGolfer
+  getGolfState(req.session.golfState)
+  .then(JSON.stringify)
+  .then(data => res.send(data))
 })
 
 // user logged out
 app.get('/logout', (req, res) => {
   console.log('logging out')
   req.session.destroy(err => {
-    getGolfState()
+    getGolfState({})
     .then(JSON.stringify)
     .then(data => res.send(data))
   })
@@ -127,9 +142,9 @@ app.get('/logout', (req, res) => {
 
 // user logged in
 app.get('/clubhouse', checkGolfer, (req, res) => {
-  console.log('returning golfer info')
-  console.log(req.session.golfer)
-  getGolfState(req.session.golfer)
+  console.log('at golfer clubhouse')
+  console.log(req.session.golfState.golfer)
+  getGolfState(req.session.golfState)
   .then(JSON.stringify)
   .then(data => res.send(data))
 })
@@ -142,7 +157,7 @@ app.post('/course', checkGolfer, (req, res) => {
   newCourse.save(function (err) {
     if (err) return handleError(err)
   })
-  getGolfState(req.session.golfer)
+  getGolfState(req.session.golfState)
   .then(JSON.stringify)
   .then(data => res.send(data))
 })
@@ -158,14 +173,16 @@ app.post('/teetime', checkGolfer, (req, res) => {
     group.save(function (err) {
       if (err) return handleError(err)
     })
-    req.session.group = group
-    res.redirect('')
+    req.session.golfState.group = group
+    getGolfState(req.session.golfState)
+    .then(JSON.stringify)
+    .then(data => res.send(data))
   })
 })
 
 app.get('/', checkGolfer, checkRound, (req, res) => {
   console.log('playing round')
-  getGolfState(req.session.golfer)
+  getGolfState(req.session.golfState)
   .then(JSON.stringify)
   .then(data => res.send(data))
 })
@@ -175,7 +192,7 @@ app.post('/stroke', checkGolfer, (req, res) => {
   const {id, shots} = req.body
   HoleScore.findByIdAndUpdate(id, {shots})
   .then(() => {
-    getGolfState(req.session.golfer)
+    getGolfState(req.session.golfState)
     .then(JSON.stringify)
     .then(res.send)
   })
@@ -186,7 +203,7 @@ app.post('/updateCourse', checkGolfer, (req, res) => {
   const course = req.body.course
   Course.findByIdAndUpdate(course.id, course)
   .then(() => {
-    getGolfState(req.session.golfer)
+    getGolfState(req.session.golfState)
     .then(JSON.stringify)
     .then(res.send)
   })
@@ -197,7 +214,7 @@ app.post('/updateGolfer', checkGolfer, (req, res) => {
   const golfer = req.body.golfer
   Golfer.findByIdAndUpdate(golfer.id, golfer)
   .then(() => {
-    getGolfState(req.session.golfer)
+    getGolfState(req.session.golfState)
     .then(JSON.stringify)
     .then(res.send)
   })

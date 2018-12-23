@@ -6,7 +6,6 @@ const {GolferSchema} = require('./Golfers')
 const {HoleSchema} = require('./Holes')
 
 const GroupSchema = new Schema({
-    // holds the current course scores for current group
     course: CourseSchema,
     golfers: [GolferSchema], 
     hole: HoleSchema
