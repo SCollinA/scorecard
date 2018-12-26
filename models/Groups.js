@@ -18,7 +18,7 @@ GroupSchema.statics.groupFromCourseAndGolfers = function(course, golfers) {
     return Course.findById(course._id)
     .then(course => {
         // get holes on course and make new hole score
-        return Promise.all(course.holes.map(hole => new HoleScore({hole, score: 0})))
+        return Promise.all(course.holes.map(hole => new HoleScore({hole, shots: 0})))
         .then(holeScores => {
             // add course score to golfers
             return Promise.all(golfers.map(golfer => {
