@@ -5,6 +5,7 @@ const {Group} = require('./models/Groups')
 
 const express = require('express')
 const mongoose = require('mongoose') 
+const {ObjectId} = require('mongodb')
 const session = require('express-session')
 const MongoDBStore = require('connect-mongodb-session')(session)
 const bodyParser = require('body-parser')
@@ -77,15 +78,16 @@ function getGolfState({golfer={}, group={}}) {
         console.log('getting state for logged in golfer')
         console.log(golfer)
         // update the group
-        return group.golfers ? (Group.findById(group._id)
-        .then(activeGroup => {
+        return golfer.currentCourseScore && golfer.currentCourseScore._id ? 
+        (Group.find({'currentCourseScores._id': ObjectId(golfer.currentCourseScore._id)})
+        .then(activeGroups => {
           console.log('getting state for active group')
-          console.log(activeGroup)
+          console.log(activeGroups[0])
           return {
             golfer, // logged in golfer
             golfers,
             courses, // all the courses
-            group: activeGroup // current group
+            group: activeGroups[0] // current group
           }
         })) : {
           golfer,
