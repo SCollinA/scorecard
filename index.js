@@ -43,7 +43,8 @@ app.use(bodyParser.json())
 // middleware
 function checkGolfer(req, res, next) {
   console.log('checking golfer')
-  if (req.session.golfState && req.session.golfState.golfer.id) {
+  console.log(req.session.golfState)
+  if (req.session.golfState && req.session.golfState.golfer._id) {
     console.log('golfer checked out')
     next()
   } else {
