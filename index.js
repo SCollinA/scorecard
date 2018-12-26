@@ -113,18 +113,18 @@ app.post('/login', (req, res) => {
     getGolfState({golfer, group: {}})
     .then(JSON.stringify)
     .then(data => res.send(data))
-  })
+  }) 
 })
 
 // user attempted register
 app.post('/register', (req, res) => {
-  console.log('attempting register') 
+  console.log(`attempting register ${req.body.name}`) 
   const name = req.body.name
   const newGolfer = new Golfer({name})
   newGolfer.save(function (err) {
     if (err) return handleError(err)
   })
-  req.session.golfState.golfer = newGolfer
+  req.session.golfState = {golfer: newGolfer}
   getGolfState(req.session.golfState)
   .then(JSON.stringify)
   .then(data => res.send(data))
