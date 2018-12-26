@@ -1,9 +1,11 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
-const {CourseSchema} = require('./Courses')
-const {GolferSchema} = require('./Golfers')
+const {Course, CourseSchema} = require('./Courses')
+const {Golfer, GolferSchema} = require('./Golfers')
 const {HoleSchema} = require('./Holes')
+const {CourseScore} = require('./CourseScores')
+const {HoleScore} = require('./HoleScores')
 
 const GroupSchema = new Schema({
     course: CourseSchema,
@@ -13,7 +15,7 @@ const GroupSchema = new Schema({
 
 GroupSchema.statics.groupFromCourseAndGolfers = function(course, golfers) {
     // get course
-    return Course.findById(course.id)
+    return Course.findById(course._id)
     .then(course => {
         // get holes on course and make new hole score
         return Promise.all(course.holes.map(hole => new HoleScore({hole, score: 0})))
@@ -23,7 +25,7 @@ GroupSchema.statics.groupFromCourseAndGolfers = function(course, golfers) {
                 // make new course score from holescores
                 const newCourseScore = new CourseScore({holeScores})
                 return Golfer.findByIdAndUpdate(
-                    golfer.id, 
+                    golfer._id, 
                     {
                         courseScores: [
                             ...golfer.courseScores, 
