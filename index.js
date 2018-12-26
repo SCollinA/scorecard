@@ -72,12 +72,12 @@ function getGolfState({golfer={}, group={}}) {
     .then(golfers => {
       console.log('getting golf state')
       // update the current golfer
-      return golfer.id ? (Golfer.findById(golfer.id)
+      return golfer._id ? (Golfer.findById(golfer._id)
       .then(golfer => { 
         console.log('getting state for logged in golfer')
         console.log(golfer)
         // update the group
-        return group.golfers ? (Group.findById(group.id)
+        return group.golfers ? (Group.findById(group._id)
         .then(activeGroup => {
           console.log('getting state for active group')
           console.log(activeGroup)
@@ -202,7 +202,7 @@ app.post('/stroke', checkGolfer, (req, res) => {
 app.post('/updateCourse', checkGolfer, (req, res) => {
   console.log('updating course')
   const course = req.body.course
-  Course.findByIdAndUpdate(course.id, course)
+  Course.findByIdAndUpdate(course._id, course)
   .then(() => {
     getGolfState(req.session.golfState)
     .then(JSON.stringify)
@@ -213,7 +213,7 @@ app.post('/updateCourse', checkGolfer, (req, res) => {
 app.post('/updateGolfer', checkGolfer, (req, res) => {
   console.log('updating golfer')
   const golfer = req.body.golfer
-  Golfer.findByIdAndUpdate(golfer.id, golfer)
+  Golfer.findByIdAndUpdate(golfer._id, golfer)
   .then(() => {
     getGolfState(req.session.golfState)
     .then(JSON.stringify)
